@@ -1,6 +1,6 @@
 # LoRaMesh Monitor
 
-Hệ thống giám sát **không xâm nhập** cho các node [LoRaMesher](https://github.com/pvcd/LoRaMesher) trên board **Heltec WiFi LoRa 32 V3 / V4**.
+Hệ thống giám sát **không xâm nhập** cho các node  trên board **Heltec WiFi LoRa 32 V3 / V4**.
 
 - Dashboard web **100% static**, chạy được trên **GitHub Pages**, không cần Python server.
 - Firmware chỉ cần **một dòng `begin()`** trong `setup()`. Không cần `monitor.update()` trong `loop()`.
@@ -256,5 +256,6 @@ Trước khi triển khai thật, hãy test ít nhất 2 board: một node và m
 - [`broker/README.md`](broker/README.md) — Mosquitto local.
 
 License: MIT (theo dự án LoRaMesher).
-#   l o r a _ m o n i t o r  
+#   l o r a _ m o n i t o r 
+ 
  
