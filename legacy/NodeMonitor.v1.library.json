@@ -1,0 +1,8 @@
+{
+  "name": "NodeMonitor",
+  "version": "2.0.0",
+  "description": "Standalone Non-Intrusive Monitoring Module for LoRaMesher (Serial COM + Wi-Fi MQTT)",
+  "keywords": ["lora", "mesh", "monitoring", "mqtt", "serial"],
+  "frameworks": "arduino",
+  "platforms": "espressif32"
+}

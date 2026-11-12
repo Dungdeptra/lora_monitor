@@ -1,0 +1,17 @@
+# Local firmware credentials
+monitor_config.h
+broker/passwd
+
+# PlatformIO build state
+.pio/
+.pioenvs/
+.piolibdeps/
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+.idea/
+node_modules/

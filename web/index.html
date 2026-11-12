@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Static, real-time monitoring dashboard for LoRaMesher nodes over MQTT WebSocket.">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#07111d">
+  <title>LoRaMesh Monitor</title>
+  <script>
+    try {
+      var savedTheme = localStorage.getItem('loramesh.monitor.theme');
+      if (savedTheme === 'light' || savedTheme === 'dark') {
+        document.documentElement.dataset.theme = savedTheme;
+      }
+    } catch (err) { /* storage may be unavailable */ }
+  </script>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b1b2b'/%3E%3Ccircle cx='32' cy='32' r='6' fill='%2322d3ee'/%3E%3Ccircle cx='32' cy='12' r='4' fill='%2334d399'/%3E%3Ccircle cx='49' cy='42' r='4' fill='%2334d399'/%3E%3Ccircle cx='15' cy='42' r='4' fill='%2334d399'/%3E%3Cpath d='M32 12 32 32M49 42 32 32M15 42 32 32' stroke='%2322d3ee' stroke-width='2' opacity='.75'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="assets/css/dashboard.css">
+</head>
+<body>
+  <svg class="icon-sprite" aria-hidden="true">
+    <symbol id="icon-logo" viewBox="0 0 64 64">
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="none" stroke="currentColor" stroke-width="2" opacity=".32"/>
+      <circle cx="32" cy="33" r="6" fill="currentColor"/>
+      <circle cx="32" cy="12" r="3.6" fill="currentColor" opacity=".78"/>
+      <circle cx="49" cy="42" r="3.6" fill="currentColor" opacity=".78"/>
+      <circle cx="15" cy="42" r="3.6" fill="currentColor" opacity=".78"/>
+      <path d="M32 12v21M49 42 32 33M15 42l17-9" fill="none" stroke="currentColor" stroke-width="2" opacity=".58"/>
+    </symbol>
+    <symbol id="icon-radio" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+      <path d="M4.9 19.1a10 10 0 0 1 0-14.2M19.1 4.9a10 10 0 0 1 0 14.2M7.8 16.2a6 6 0 0 1 0-8.4M16.2 7.8a6 6 0 0 1 0 8.4"/>
+      <circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"/>
+    </symbol>
+    <symbol id="icon-nodes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+      <circle cx="12" cy="5" r="2.4"/><circle cx="5" cy="18" r="2.4"/><circle cx="19" cy="18" r="2.4"/>
+      <path d="M10.9 7 6.4 15.7M13.1 7l4.5 8.7M7.4 18h9.2"/>
+    </symbol>
+    <symbol id="icon-route" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="5" cy="6" r="2.2"/><circle cx="19" cy="18" r="2.2"/><path d="M7.2 6H14a4 4 0 0 1 0 8h-4a4 4 0 0 0 0 8h6.8"/>
+    </symbol>
+    <symbol id="icon-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+      <path d="M12 3.5 22 21H2L12 3.5Z" stroke-linejoin="round"/><path d="M12 9v5.2"/><circle cx="12" cy="17.6" r="1" fill="currentColor" stroke="none"/>
+    </symbol>
+    <symbol id="icon-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+      <circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.87l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.87-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.14.38.36.72.66 1 .3.27.68.4 1.08.4H21v4h-.09a1.7 1.7 0 0 0-1.51.6Z" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+      <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"/>
+    </symbol>
+    <symbol id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5 8.5 8.5 0 1 0 20.5 14.2Z"/>
+    </symbol>
+    <symbol id="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+      <path d="M5 5l14 14M19 5 5 19"/>
+    </symbol>
+    <symbol id="icon-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+      <circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 4.5 4.5"/>
+    </symbol>
+    <symbol id="icon-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 3v11M7.5 10.5 12 15l4.5-4.5M4 19.5h16"/>
+    </symbol>
+    <symbol id="icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>
+    </symbol>
+    <symbol id="icon-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+      <path d="M9 5v14M15 5v14"/>
+    </symbol>
+    <symbol id="icon-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 7h16M9 7V4h6v3M6.5 7l1 13h9l1-13M10 11v5M14 11v5"/>
+    </symbol>
+    <symbol id="icon-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 6v5h-5M4 18v-5h5"/><path d="M18.5 9A7 7 0 0 0 6 6.5L4 11M5.5 15A7 7 0 0 0 18 17.5l2-4.5"/>
+    </symbol>
+    <symbol id="icon-wifi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+      <path d="M2.5 9.5a14 14 0 0 1 19 0M5.5 13a9.5 9.5 0 0 1 13 0M8.7 16.4a5 5 0 0 1 6.6 0"/><circle cx="12" cy="19.5" r="1" fill="currentColor" stroke="none"/>
+    </symbol>
+    <symbol id="icon-chip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/>
+    </symbol>
+    <symbol id="icon-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+      <circle cx="12" cy="12" r="8.5"/><path d="M12 7v5.4l3.4 2"/>
+    </symbol>
+    <symbol id="icon-activity" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 12h4l2.5-7 5 14 2.5-7h4"/>
+    </symbol>
+  </svg>
+
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#overview" aria-label="LoRaMesh Monitor home">
+        <svg class="brand-mark" aria-hidden="true"><use href="#icon-logo"></use></svg>
+        <span class="brand-text">LoRaMesh <em>Monitor</em></span>
+      </a>
+
+      <nav class="nav" id="main-nav" aria-label="Main">
+        <a href="#overview" data-view="overview" class="is-active">Overview</a>
+        <a href="#nodes" data-view="nodes">Nodes</a>
+        <a href="#events" data-view="events">Events <span class="nav-count" id="event-nav-count">0</span></a>
+        <a href="#charts" data-view="charts">Charts</a>
+        <a href="#guide" data-view="guide">Guide</a>
+      </nav>
+
+      <div class="topbar-actions">
+        <button class="conn-pill is-idle" id="connection-pill" type="button" title="MQTT connection settings">
+          <span class="conn-dot" aria-hidden="true"></span>
+          <span id="connection-label">Connecting…</span>
+        </button>
+        <button class="icon-btn" id="theme-toggle" type="button" title="Toggle color theme" aria-label="Toggle color theme">
+          <svg class="icon icon-moon" aria-hidden="true"><use href="#icon-moon"></use></svg>
+          <svg class="icon icon-sun" aria-hidden="true"><use href="#icon-sun"></use></svg>
+        </button>
+        <button class="icon-btn" id="settings-btn" type="button" title="Connection settings" aria-label="Connection settings">
+          <svg class="icon" aria-hidden="true"><use href="#icon-settings"></use></svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="main">
+      <!-- ============================= OVERVIEW ============================= -->
+      <section class="view" id="view-overview" data-view-panel="overview">
+        <div class="page-head">
+          <div>
+            <p class="eyebrow">Live telemetry</p>
+            <h1>Mesh overview</h1>
+            <p class="page-sub">Real measurements published by your nodes. Nothing is simulated.</p>
+          </div>
+          <div class="page-head-meta">
+            <span class="live-time"><svg class="icon" aria-hidden="true"><use href="#icon-clock"></use></svg><span id="overview-clock">--:--:--</span></span>
+            <span class="muted" id="overview-prefix">loramesh/+/metrics</span>
+          </div>
+        </div>
+
+        <div class="alert alert-warn" id="overview-alert" hidden>
+          <svg class="icon" aria-hidden="true"><use href="#icon-alert"></use></svg>
+          <div>
+            <strong id="overview-alert-title">Dashboard not connected</strong>
+            <p id="overview-alert-text">Open connection settings to subscribe to your broker.</p>
+          </div>
+          <button class="btn btn-ghost btn-sm" id="overview-alert-action" type="button">Open settings</button>
+        </div>
+
+        <div class="kpi-grid">
+          <article class="kpi-card">
+            <div class="kpi-icon accent-cyan"><svg class="icon" aria-hidden="true"><use href="#icon-nodes"></use></svg></div>
+            <div class="kpi-body">
+              <span class="kpi-label">Nodes reporting</span>
+              <strong class="kpi-value" id="kpi-nodes">0</strong>
+              <span class="kpi-sub" id="kpi-nodes-sub">Waiting for telemetry</span>
+            </div>
+          </article>
+          <article class="kpi-card">
+            <div class="kpi-icon accent-green"><svg class="icon" aria-hidden="true"><use href="#icon-radio"></use></svg></div>
+            <div class="kpi-body">
+              <span class="kpi-label">LoRa packets</span>
+              <strong class="kpi-value" id="kpi-packets">0</strong>
+              <span class="kpi-sub" id="kpi-packets-sub">TX 0 · RX 0</span>
+            </div>
+          </article>
+          <article class="kpi-card">
+            <div class="kpi-icon accent-blue"><svg class="icon" aria-hidden="true"><use href="#icon-route"></use></svg></div>
+            <div class="kpi-body">
+              <span class="kpi-label">Observed routes</span>
+              <strong class="kpi-value" id="kpi-routes">0</strong>
+              <span class="kpi-sub" id="kpi-routes-sub">Across reporting nodes</span>
+            </div>
+          </article>
+          <article class="kpi-card">
+            <div class="kpi-icon accent-amber"><svg class="icon" aria-hidden="true"><use href="#icon-alert"></use></svg></div>
+            <div class="kpi-body">
+              <span class="kpi-label">Link errors</span>
+              <strong class="kpi-value" id="kpi-errors">0</strong>
+              <span class="kpi-sub" id="kpi-errors-sub">TX/RX errors · publish failures</span>
+            </div>
+          </article>
+        </div>
+
+        <div class="section-head">
+          <div>
+            <h2>Live nodes</h2>
+            <p class="section-sub">Monitoring status comes from MQTT. A missing heartbeat does not mean the LoRa node failed.</p>
+          </div>
+          <div class="segmented" id="overview-filter" role="group" aria-label="Filter nodes">
+            <button type="button" class="is-active" data-filter="all">All</button>
+            <button type="button" data-filter="online">Online</button>
+            <button type="button" data-filter="stale">Stale</button>
+          </div>
+        </div>
+
+        <div class="node-grid" id="node-grid"></div>
+        <div class="empty-state" id="overview-empty" hidden>
+          <div class="empty-visual"><svg class="icon" aria-hidden="true"><use href="#icon-radio"></use></svg></div>
+          <h3>Waiting for the first node</h3>
+          <p id="overview-empty-text">Connect to the broker and flash a node with NodeMonitor enabled. Nodes publish every few seconds.</p>
+          <button class="btn btn-primary" type="button" data-open-settings>Connection settings</button>
+        </div>
+
+        <div class="note-card">
+          <svg class="icon" aria-hidden="true"><use href="#icon-alert"></use></svg>
+          <p><strong>Interpreting a silent node.</strong> This dashboard can only observe MQTT telemetry. If Wi-Fi or the broker link drops, the node disappears from this page even while the LoRa mesh keeps running. Check the serial console before assuming a radio or routing failure.</p>
+        </div>
+      </section>
+
+      <!-- ============================== NODES =============================== -->
+      <section class="view" id="view-nodes" data-view-panel="nodes" hidden>
+        <div class="page-head">
+          <div>
+            <p class="eyebrow">Inventory</p>
+            <h1>Nodes</h1>
+            <p class="page-sub">Every node observed on the selected topic prefix.</p>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <label class="search-field">
+            <svg class="icon" aria-hidden="true"><use href="#icon-search"></use></svg>
+            <input type="search" id="node-search" placeholder="Search node, address, board…" autocomplete="off">
+          </label>
+          <label class="select-field">
+            <span>Sort</span>
+            <select id="node-sort">
+              <option value="lastSeen">Last telemetry</option>
+              <option value="name">Node name</option>
+              <option value="address">LoRa address</option>
+              <option value="rx">RX packets</option>
+              <option value="tx">TX packets</option>
+              <option value="rssi">LoRa RSSI</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="table-card">
+          <div class="table-scroll">
+            <table class="data-table" id="nodes-table">
+              <thead>
+                <tr>
+                  <th scope="col">Node</th>
+                  <th scope="col">Address</th>
+                  <th scope="col">Board</th>
+                  <th scope="col">Monitoring</th>
+                  <th scope="col">Wi-Fi</th>
+                  <th scope="col" class="num">LoRa RSSI</th>
+                  <th scope="col" class="num">SNR</th>
+                  <th scope="col" class="num">TX</th>
+                  <th scope="col" class="num">RX</th>
+                  <th scope="col" class="num">Routes</th>
+                  <th scope="col">Last telemetry</th>
+                  <th scope="col" class="sr-only">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="nodes-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty-inline" id="nodes-empty" hidden>No nodes match the current filter.</div>
+        </div>
+      </section>
+
+      <!-- ============================== EVENTS ============================== -->
+      <section class="view" id="view-events" data-view-panel="events" hidden>
+        <div class="page-head">
+          <div>
+            <p class="eyebrow">Event stream</p>
+            <h1>Events</h1>
+            <p class="page-sub">Packets, routes, network state, monitor lifecycle and errors.</p>
+          </div>
+        </div>
+
+        <div class="toolbar toolbar-wrap">
+          <div class="chip-group" id="event-filters" role="group" aria-label="Filter events by type">
+            <button type="button" class="is-active" data-filter="all">All</button>
+            <button type="button" data-filter="packets">Packets</button>
+            <button type="button" data-filter="routing">Routing</button>
+            <button type="button" data-filter="network">Network</button>
+            <button type="button" data-filter="errors">Errors</button>
+            <button type="button" data-filter="monitor">Monitor</button>
+          </div>
+          <div class="toolbar-right">
+            <label class="select-field">
+              <span>Node</span>
+              <select id="event-node-filter"><option value="all">All nodes</option></select>
+            </label>
+            <label class="switch-field">
+              <input type="checkbox" id="events-pause">
+              <span class="switch-track" aria-hidden="true"></span>
+              <span>Pause</span>
+            </label>
+            <button class="btn btn-ghost btn-sm" id="events-clear" type="button">
+              <svg class="icon" aria-hidden="true"><use href="#icon-trash"></use></svg> Clear
+            </button>
+            <button class="btn btn-ghost btn-sm" id="events-export" type="button">
+              <svg class="icon" aria-hidden="true"><use href="#icon-download"></use></svg> Export
+            </button>
+          </div>
+        </div>
+
+        <div class="table-card event-card">
+          <div class="event-list" id="event-list"></div>
+          <div class="empty-inline" id="events-empty" hidden>
+            <strong>No events yet.</strong>
+            <span>Events appear as soon as a node publishes them.</span>
+          </div>
+        </div>
+        <p class="footnote">Events are held in this browser tab only. Reloading clears the stream.</p>
+      </section>
+
+      <!-- ============================== CHARTS ============================== -->
+      <section class="view" id="view-charts" data-view-panel="charts" hidden>
+        <div class="page-head">
+          <div>
+            <p class="eyebrow">History</p>
+            <h1>Charts</h1>
+            <p class="page-sub">In-browser history from live MQTT samples. Values are never interpolated or invented.</p>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <label class="select-field">
+            <span>Node</span>
+            <select id="chart-node"></select>
+          </label>
+          <label class="select-field">
+            <span>Window</span>
+            <select id="chart-window">
+              <option value="300000">5 minutes</option>
+              <option value="900000">15 minutes</option>
+              <option value="1800000">30 minutes</option>
+              <option value="3600000">1 hour</option>
+            </select>
+          </label>
+          <div class="toolbar-right">
+            <span class="muted" id="chart-sample-info">0 samples</span>
+          </div>
+        </div>
+
+        <div class="chart-grid" id="chart-grid">
+          <article class="chart-card chart-wide">
+            <header class="chart-head">
+              <div><h3>Packet rate</h3><p>Packets per second, derived from counter deltas</p></div>
+              <span class="chart-latest" id="chart-rate-latest">—</span>
+            </header>
+            <div class="chart-box"><canvas id="chart-rate" aria-label="Packet rate chart" role="img"></canvas></div>
+          </article>
+          <article class="chart-card">
+            <header class="chart-head">
+              <div><h3>LoRa signal</h3><p>Real RadioLib RSSI and SNR</p></div>
+              <span class="chart-latest" id="chart-signal-latest">—</span>
+            </header>
+            <div class="chart-box"><canvas id="chart-signal" aria-label="LoRa RSSI and SNR chart" role="img"></canvas></div>
+          </article>
+          <article class="chart-card">
+            <header class="chart-head">
+              <div><h3>Wi-Fi link</h3><p>Measured Wi-Fi RSSI</p></div>
+              <span class="chart-latest" id="chart-wifi-latest">—</span>
+            </header>
+            <div class="chart-box"><canvas id="chart-wifi" aria-label="Wi-Fi RSSI chart" role="img"></canvas></div>
+          </article>
+          <article class="chart-card chart-wide">
+            <header class="chart-head">
+              <div><h3>Free heap</h3><p>Node memory reported with each metrics sample</p></div>
+              <span class="chart-latest" id="chart-heap-latest">—</span>
+            </header>
+            <div class="chart-box"><canvas id="chart-heap" aria-label="Free heap chart" role="img"></canvas></div>
+          </article>
+        </div>
+
+        <div class="empty-state" id="charts-empty" hidden>
+          <div class="empty-visual"><svg class="icon" aria-hidden="true"><use href="#icon-activity"></use></svg></div>
+          <h3>No history for this node yet</h3>
+          <p>Keep the dashboard open while the node publishes metrics. History is stored locally in this tab.</p>
+        </div>
+      </section>
+
+      <!-- =============================== GUIDE ============================== -->
+      <section class="view" id="view-guide" data-view-panel="guide" hidden>
+        <div class="page-head">
+          <div>
+            <p class="eyebrow">Reference</p>
+            <h1>How it works</h1>
+            <p class="page-sub">A static page, your broker, and one begin() call in the sketch.</p>
+          </div>
+        </div>
+
+        <div class="guide-grid">
+          <article class="guide-card span-2">
+            <span class="step-index">01</span>
+            <h2>Enable telemetry in firmware</h2>
+            <p>Copy the monitor config, edit Wi-Fi and broker settings, then call <code>begin()</code> once in <code>setup()</code>. No <code>loop()</code> changes are required; the monitor runs in its own FreeRTOS task.</p>
+            <pre class="code-block"><code>#include &lt;NodeMonitor.h&gt;
+
+void setup() {
+  Serial.begin(115200);
+  NodeMonitor::getInstance().begin(
+      "YOUR_WIFI", "YOUR_PASSWORD",
+      "broker.emqx.io", 1883);
+  // ... existing mesh setup ...
+}</code><button class="copy-btn" type="button" data-copy>Copy</button></pre>
+            <p class="hint">For TLS or a custom node ID use the <code>MonitorConfig</code> overload. The MAC address supplies a stable node ID by default.</p>
+          </article>
+
+          <article class="guide-card">
+            <span class="step-index">02</span>
+            <h2>Point the dashboard at the same broker</h2>
+            <p>Open <strong>Connection settings</strong> and enter a browser-reachable MQTT WebSocket URL. For the public EMQX quick-test broker the default is:</p>
+            <pre class="code-block"><code>wss://broker.emqx.io:8084/mqtt</code><button class="copy-btn" type="button" data-copy>Copy</button></pre>
+            <p class="hint">Firmware uses TCP port 1883; browsers use WebSocket 8084 (TLS). They are separate listeners on the same broker.</p>
+          </article>
+
+          <article class="guide-card">
+            <span class="step-index">03</span>
+            <h2>Publish the dashboard</h2>
+            <p>The <code>web/</code> folder is fully static. Push it to GitHub and let the included Pages workflow deploy it, or open <code>index.html</code> locally.</p>
+            <p class="hint">GitHub Pages is HTTPS, so the broker must offer <code>wss://</code>. Plain <code>ws://</code> is blocked as mixed content.</p>
+          </article>
+
+          <article class="guide-card span-2">
+            <h2>Topic contract</h2>
+            <div class="table-scroll">
+              <table class="data-table compact">
+                <thead><tr><th>Topic</th><th>Retained</th><th>Purpose</th></tr></thead>
+                <tbody>
+                  <tr><td><code>&lt;prefix&gt;/&lt;node_id&gt;/status</code></td><td>Yes</td><td>Online flag, IP, board and firmware. Last Will marks the node offline.</td></tr>
+                  <tr><td><code>&lt;prefix&gt;/&lt;node_id&gt;/metrics</code></td><td>No</td><td>Packet counters, real RSSI/SNR, Wi-Fi, routes, heap and uptime.</td></tr>
+                  <tr><td><code>&lt;prefix&gt;/&lt;node_id&gt;/events</code></td><td>No</td><td>TX/RX, route changes, network state, errors and monitor lifecycle.</td></tr>
+                  <tr><td><code>&lt;prefix&gt;/&lt;node_id&gt;/logs</code></td><td>No</td><td>Optional raw log lines when <code>publishRawLogs</code> is enabled.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="guide-card">
+            <h2>Monitoring vs. mesh health</h2>
+            <p>The dashboard proves that telemetry arrived. It cannot prove that a LoRa radio is healthy. A node can be routing traffic while its Wi-Fi link is down, and a node with excellent Wi-Fi can have a failed radio.</p>
+            <p>Use the serial console and the mesh routing table for radio-level diagnosis.</p>
+          </article>
+
+          <article class="guide-card">
+            <h2>Data stays in the browser</h2>
+            <p>No backend, no database, no analytics. Settings live in <code>localStorage</code>; history and events live in memory and disappear on reload.</p>
+            <p class="hint">Public brokers are public. Use a unique topic prefix or a private broker with authentication for real deployments.</p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>LoRaMesh Monitor <span class="mono" id="footer-version">v2.1.0</span></span>
+      <span class="footer-sep">·</span>
+      <span>Static dashboard · MQTT over WebSocket</span>
+      <span class="footer-spacer"></span>
+      <span id="footer-broker">not connected</span>
+    </footer>
+  </div>
+
+  <!-- ============================ NODE DRAWER ============================ -->
+  <div class="drawer-backdrop" id="drawer-backdrop" hidden></div>
+  <aside class="drawer" id="node-drawer" aria-hidden="true" aria-labelledby="drawer-title">
+    <header class="drawer-head">
+      <div class="drawer-title-wrap">
+        <p class="eyebrow">Node detail</p>
+        <h2 id="drawer-title">Node</h2>
+        <p id="drawer-subtitle" class="mono">—</p>
+      </div>
+      <button class="icon-btn" id="drawer-close" type="button" aria-label="Close node details">
+        <svg class="icon" aria-hidden="true"><use href="#icon-close"></use></svg>
+      </button>
+    </header>
+    <div class="drawer-body" id="drawer-content"></div>
+  </aside>
+
+  <!-- ============================ SETTINGS ============================== -->
+  <dialog class="dialog" id="settings-dialog" aria-labelledby="settings-title">
+    <form id="settings-form" novalidate>
+      <header class="dialog-head">
+        <div>
+          <p class="eyebrow">Connection</p>
+          <h2 id="settings-title">MQTT broker</h2>
+        </div>
+        <button class="icon-btn" type="button" id="settings-close" aria-label="Close settings">
+          <svg class="icon" aria-hidden="true"><use href="#icon-close"></use></svg>
+        </button>
+      </header>
+
+      <div class="dialog-body">
+        <label class="field">
+          <span>Preset</span>
+          <select id="broker-preset">
+            <option value="">Choose a preset…</option>
+            <option value="wss://broker.emqx.io:8084/mqtt">EMQX public · WSS</option>
+            <option value="ws://broker.emqx.io:8083/mqtt">EMQX public · WS (local only)</option>
+            <option value="ws://localhost:9001">Local Mosquitto · WS</option>
+            <option value="wss://broker.hivemq.com:8884/mqtt">HiveMQ public · WSS</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>WebSocket URL</span>
+          <input type="url" id="broker-url" name="brokerUrl" placeholder="wss://broker.example.com:8084/mqtt" spellcheck="false" required>
+          <small id="broker-url-hint">Browsers connect over WebSocket. GitHub Pages requires <code>wss://</code>.</small>
+        </label>
+
+        <label class="field">
+          <span>Topic prefix</span>
+          <input type="text" id="topic-prefix" name="topicPrefix" placeholder="loramesh" spellcheck="false" required>
+          <small>Dashboard subscribes to <code id="prefix-preview">loramesh/+/metrics</code>.</small>
+        </label>
+
+        <div class="field-row">
+          <label class="field">
+            <span>Username <em>optional</em></span>
+            <input type="text" id="mqtt-username" name="username" autocomplete="username" spellcheck="false">
+          </label>
+          <label class="field">
+            <span>Password <em>optional</em></span>
+            <input type="password" id="mqtt-password" name="password" autocomplete="current-password">
+          </label>
+        </div>
+
+        <label class="switch-field switch-row">
+          <input type="checkbox" id="subscribe-logs">
+          <span class="switch-track" aria-hidden="true"></span>
+          <span>
+            <strong>Subscribe to raw logs</strong>
+            <small>Only useful when <code>publishRawLogs</code> is enabled in firmware.</small>
+          </span>
+        </label>
+
+        <div class="form-error" id="settings-error" hidden></div>
+        <div class="security-note">
+          <svg class="icon" aria-hidden="true"><use href="#icon-alert"></use></svg>
+          <p>Settings are stored in this browser's <code>localStorage</code>. Public brokers are visible to everyone; use a unique prefix or a private broker for real data.</p>
+        </div>
+      </div>
+
+      <footer class="dialog-foot">
+        <button class="btn btn-danger-ghost" type="button" id="settings-disconnect">Disconnect</button>
+        <span class="footer-spacer"></span>
+        <button class="btn btn-ghost" type="button" id="settings-cancel">Cancel</button>
+        <button class="btn btn-primary" type="submit">
+          <svg class="icon" aria-hidden="true"><use href="#icon-refresh"></use></svg>
+          Save &amp; connect
+        </button>
+      </footer>
+    </form>
+  </dialog>
+
+  <div class="toast-stack" id="toast-stack" aria-live="polite"></div>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/store.js"></script>
+  <script src="assets/js/charts.js"></script>
+  <script src="assets/vendor/mqtt.min.js"></script>
+  <script src="assets/js/mqtt-client.js"></script>
+  <script src="assets/js/ui.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>

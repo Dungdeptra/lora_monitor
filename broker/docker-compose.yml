@@ -1,0 +1,14 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: loramesh-mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"   # MQTT TCP for firmware
+      - "9001:9001"   # MQTT WebSocket for the dashboard
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mosquitto-data:/mosquitto/data
+
+volumes:
+  mosquitto-data:
