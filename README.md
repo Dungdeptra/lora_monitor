@@ -1,4 +1,5 @@
 # LoRaMesh Monitor
+
 - Dashboard web **100% static**, chạy được trên **GitHub Pages**, không cần Python server.
 - Firmware chỉ cần **một dòng `begin()`** trong `setup()`. Không cần `monitor.update()` trong `loop()`.
 - Telemetry chạy trong **FreeRTOS task riêng**, không thay đổi radio, routing hay cấu trúc dữ liệu của LoRaMesher.
